@@ -206,7 +206,6 @@ Ich möchte eine Visualsierung erzeugen, die sowohl relevante Datenstrukturen au
 ```{r KosDist, fig.cap="Jitterplots zur Ähnlichkeit zwischen den Kundenaussagen und den Beispielstatements für verschiedene Aussaagetypen.", out.height="600px"}
 # Vorbereitung Visualisierung: Objekte initialsieren und definieren
 plots <- list()
-senti <- c("positiv", "negativ")
 farben <- viridis(length(unique(beispiele$beispiel)))
 schwelle <- 0.875
 
@@ -214,7 +213,7 @@ schwelle <- 0.875
 for (row in 1:2) {
   plots[[row]] <- plot_ly(
     data = similarity %>% 
-      filter(sentiment == senti[row])) %>%
+      filter(sentiment == c("positiv", "negativ")[row])) %>%
     add_trace(
       y = ~kosinus, x = ~jitter(as.numeric(factor(thema))), 
       type = "scatter", mode = "markers", color = ~thema, colors = farben,
@@ -225,7 +224,7 @@ for (row in 1:2) {
     add_segments(x = 0, xend = nrow(beispiele), y = schwelle, yend = schwelle,
                  line = list(color = "black", width = 2)) %>%
     layout(annotations = list(x = 5.7, y = 0.95, 
-                              text = paste("<b>", sentiment[row], "<b>", sep = ""), 
+                              text = paste("<b>", c("positiv", "negativ")[row], "<b>", sep = ""), 
                               showarrow = FALSE, font = list(size = 12)), 
            xaxis = list(range = c(0, 6), tickvals = 1:5, title = "Aussagetyp", 
                         ticktext = ~str_wrap(unique(aussagetyp), 13)),
