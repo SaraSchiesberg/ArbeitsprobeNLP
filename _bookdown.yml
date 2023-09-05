@@ -1,0 +1,4 @@
+delete_merged_file: true
+language:
+  label:
+    fig: !expr function(i) paste("<b>", "Abb. ", i, "</b> ", sep = "")

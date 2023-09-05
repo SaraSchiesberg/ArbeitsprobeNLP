@@ -1,0 +1,196 @@
+# Reviews und Bewertungen {#ReviesBewertungen}
+
+Im Folgenden steht der Zusammenhang zwischen den Reviews und den Bewertungen im Fokus des Interesses. Die Auseinandersetzung mit dem [Textumfang](#Textumfang) der Reviews erfolgt am Beginn der Untersuchungen, weil damit eine quellenkritische Fragestellung einhergeht. So ist es interessant, ob in dem Textmaterial alle Kunden gleichermassen repräsentieren sind. Alternativ könnte hier auch eine Verzerrung durch die Kundenzufriedenheit vorliegen. Anschließend wird die [semantische Varianz](#SemVar) durch eine Hauptkomponentenanalyse ausgewertet. Dieses explorative Verfahren vermittelt typischerweise eine gute Vorstellung von den relevanten Wirkmechanismen im Datensatz.
+
+Um die Reviews im Zusammenhang mit den Bewertungen zu analysieren, werden vorab verschiedene Objekte definiert.
+
+```{r objektdefinitionen}
+# Anzahl Wörter pro Review
+daten <- daten %>%
+  mutate(woerter = lengths(strsplit(review, "\\s+")))
+
+# Nur die Fälle mit einer Review
+reviews <- daten %>%
+  filter(woerter > 0) 
+
+# Zusammenfassende Angaben zu den Bewertungen 
+bewertungen <- daten %>%
+  group_by(bewertung) %>%
+  summarize(
+    median_woerter = median(woerter), 
+    ges_n = n(),
+    ohne_review_n = sum(woerter == 0),
+    mit_review_n = sum(woerter != 0)
+  ) %>%
+  mutate(
+    ges_anteil = ges_n / sum(ges_n), 
+    mit_review_anteil = mit_review_n / sum(mit_review_n), 
+    ohne_review_anteil = ohne_review_n / sum(ohne_review_n)
+  ) %>%
+  relocate(ohne_review_n, .before = ohne_review_anteil) %>%
+  relocate(ges_anteil, .after = ges_n)
+
+# Unterscheidet sich die Verteilung der Bewertungen ohne Review von der 
+# Proportion, die man aufgrund der Bewertungen mit Review erwarten könnte? 
+chi <- chisq.test(bewertungen$ohne_review_n, p = bewertungen$mit_review_anteil)
+
+# Gibt es einen Zusammenhang zwischen der Bewertung und der Textlänge?
+cor <- cor.test(
+  as.numeric(reviews$bewertung), 
+  reviews$woerter, 
+  method = "kendall"
+  )
+```
+
+Nun erzeuge ich ein Diagramm, das die Verteilung der unterschiedlichen Bewertungen zeigt.
+
+```{r LinieSterne, fig.cap = "Die Häufigkeit der unterschiedlichen Bewertungen. Fahren Sie mit der Maus über das Diagramm um detaillierte Angaben zu einem Datenpunkt zu erhalten."}
+# Vorbereitung Visualisierung: Farbschema
+farbe <- viridis(1)
+
+# Visualisierung: Kundenzufriedenheit insgesamt
+plot_ly(bewertungen, x = ~bewertung, y = ~ges_anteil, type = "scatter", 
+        mode = "lines+markers", 
+        line = list(color = farbe), 
+        hoverinfo = "text", 
+        marker = list(size = 20, color = farbe),
+        hovertext = ~paste("Sterne: ", bewertung, "<br>Anzahl: ", ges_n,
+                           "<br>Anteil: ", round(ges_anteil * 100, 1), "%")) %>%
+  layout(
+    title = "Kundenzufriedenheit insgesamt", title_pad = 50,
+    xaxis = list(title = "Sterne"), 
+    yaxis = list(title = "Anteil", tickformat = ".0%", title_standoff = 50),
+    showlegend = FALSE,
+    margin = list(t = 50)
+  )
+```
+Für **OBI** ist eine hohe Kundenzufriedenheit zu verzeichnen. So haben `r round(bewertungen[5, "ges_anteil"]*100,1)`% der Kunden fünf Sterne vergeben (Abb. \@ref(fig:LinieSterne)). Die Bewertung mit 2 Sterne sind mit nur `r round(bewertungen[2, "ges_anteil"]*100, 1)`% am seltensten vertreten.
+
+## Textumfang und Bewertungen {#Textumfang}
+
+In insgesamt `r round((1-nrow(reviews)/nrow(daten))*100)`% der Fälle haben die Kunden keine Review zu ihrer Bewertung geschrieben. Es stellt sich die Frage, ob diese Kunden **Obi** anders bewerten als die Kunden, die auch eine Review geschrieben haben.
+
+```{r TextBew, fig.cap = "Vergleich zwischen Bewertungen mit und ohne Review."}
+# Vorbereitung für die Visualisierung: Farbschema
+farbe <- viridis(3)
+
+# Visualisierung: Kundenzufriedenheit im Vergleich
+plot_ly(bewertungen) %>%  
+  add_trace(
+    x = ~bewertung, y = ~ohne_review_anteil, type = "scatter", 
+    mode = "lines+markers", name = "ohne Review", 
+    marker = list(size = 20, color = farbe[2]),
+    line = list(color = farbe[2]),
+    hovertemplate = "<b>ohne Review</b><br>Sterne: %{x}<br>Anzahl: %{marker.size}<br>Anteil: %{y:.1%}"
+  ) %>%
+  add_trace(
+    x = ~bewertung, y = ~mit_review_anteil, type = "scatter", 
+    mode = "lines+markers", name = "mit Review",
+    marker = list(size = 20, color = farbe[3]),
+    line = list(color = farbe[3]),
+    hovertemplate = "<b>mit Review</b><br>Sterne: %{x}<br>Anzahl: %{marker.size}<br>Anteil: %{y:.1%}"
+  ) %>%
+  layout(
+    title = "Kundenzufriedenheit im Vergleich",
+    xaxis = list(title = "Sterne"), 
+    yaxis = list(title = "Anteil", tickformat = ".0%"),
+    showlegend = TRUE, 
+    legend = list(x = 0.1, y = 0.9, bordercolor = "#E2E2E2", borderwidth = 2),
+    margin = list(t = 50)
+  )
+```
+Ein Vergleich zwischen den Bewertungen mit und ohne Review zeigt, dass die unzufriedene Kunden ihre Kritik eher verbalisieren als die zufriedenen Kunden ihr Lob (Abb. \@ref(fig:TextBew)). So sind bei den guten Bewertungen mit vier oder fünf Sternen die Kunden ohne Review mit einem höheren Anteil vertreten. Bei den schlechten Bewertungen verhält es sich jedoch umgekehrt. Das unterschiedliche Zufriedenheitsniveau der Kunden mit und ohne Review ist statistisch signifikant (*χ² = `r round(chi$statistic[[1]], 1)`, p = `r format(chi$p.value, scientific=TRUE, digits = 3)`*).
+
+Ich möchte diese Überlegungen noch weiter vertiefen. Daher wird im Folgenden die Textlänge der Reviews differenziert nach dem Zufriedenheitsniveau ausgewertet.
+
+```{r TextlaengeBew,  fig.cap = "Densityplot zur Anzahl der Wörter differenziert nach der Bewertung. Die vertikalen Linien geben die Mediane für die entsprechenden Stichproben an.", out.height='600px'}
+# Vorbereitung für die Visualsierung: Farbschema, Plotliste, Legendenvariable
+farbe <- viridis(5) 
+plots <- list()
+reviews <- reviews %>%
+  mutate(legende = case_when(
+    bewertung == 1 ~ paste(bewertung, "Stern"),
+    bewertung > 1 ~ paste(bewertung, "Sterne"),
+    TRUE ~ as.character(bewertung)))
+
+# Schleife: Densityplot mit Textlängen für jede Bewertung
+for (row in 1:nrow(bewertungen)) {
+  d <- density(reviews %>% filter(bewertung == row) %>% pull(woerter)) 
+  nearest_index <- which.min(abs(d$x - bewertungen[[row, "median_woerter"]])) # für Höhe der Medianlinien
+  plots[[row]] <- plot_ly() %>%  
+    add_lines(x = d$x, y = d$y, name = paste(row, "Stern"), fill = 'tozeroy', 
+              hoverinfo = "none", line = list(color = farbe[row]), 
+              fillcolor = adjustcolor(farbe[row], alpha.f = 0.5)) %>%
+    add_trace(x = c(bewertungen[[row, "median_woerter"]], 
+                    bewertungen[[row, "median_woerter"]]), 
+              y = c(0, d$y[nearest_index]), type = "scatter", mode = "lines", 
+              line = list(color = farbe[row]), hoverinfo = "text", 
+              hovertext = paste("Sterne:", row, "<br>Median:", 
+                                bewertungen[row, "median_woerter"])) %>%
+    layout(annotations = list(x = 170 , y = max(d$y), 
+                               text = paste("<b>", 
+                                            sort(unique(reviews$legende))[row], 
+                                            "</b>"), 
+                               showarrow = FALSE, colour = farbe[row]))
+  }
+
+# Zusammenfügen: Densityplots für jede Bewertungen
+subplot(rev(plots), nrows = 5, shareY = TRUE, shareX = TRUE) %>%
+  layout(title = "Textlängen der verschiedenen Bewertungen", 
+         xaxis = list(title = "Anzahl Wörter", zeroline = FALSE), 
+         yaxis = list(title = "Density"), showlegend = FALSE, 
+         margin = list(t = 50)
+  )
+```
+
+Es gibt Reviews, die lediglich ein Wort beinhalten. Maximal sind jedoch bis zu `r max(reviews$woerter)` Wörter möglich. Je negativer eine Bewertung ist, desto länger ist typischerweise der Text. Dieser Zusammenhang ist in Abb. \@ref(fig:TextlaengeBew) zu erkennen. Bei den sehr guten Bewertungen mit 5 Sternen schreiben die Kunden im Durchschnitt lediglich `r bewertungen$median_woerter[5]` Wörter. Kunden, die nur einen Stern vergeben haben, schreiben hingegen im Durchschnitt `r bewertungen$median_woerter[1]` Wörter. Unter diesen besonders schlechten Bewertungen sind auffallend viele lange Texte mit mehr mehr als 100 Wörtern zu finden. Insgesamt betrachtet zeichnet sich hier ein statistisch relevanter Zusammenhang zwischen der Textlänge und der Zufriedenheit ab (*τ = `r round(cor$estimate[[1]], 2)`, p = `r format(cor$p.value, scientific=TRUE, digits = 3)`*).
+
+Abschließend lässt es sich festhalten, dass die Kundenreviews keine repräsentative Stichprobe darstellen, wie wir sie aus der Marktforschung kennen. Anstelle hören wir durch eine Analyse der Kundenreviews insbesondere einer ganz spezifischen Gruppe zu: den unzufriedenen Kunden. 
+
+## Varianz und Bewertungen {#Varianz}
+
+Im Folgenden frage ich die embeddings von einem großen Sprachmodell ab. Diese numerischen Repräsentationen der Reviews stellen dann den Input für eine Hauptkomponentenanalyse (PCA) dar. Dabei handelt es sich um einen ergebnismächtigen Algorithmus aus dem Bereich des unüberwachten maschinellen Lernens, der Muster in großen Datensammlungen aufzeigen kann.
+
+```{r api-request, eval=FALSE, include=TRUE}
+# Request embeddings
+response_embeddings <- get_embeddings(reviews$Review)
+
+# Abspeichern
+save(response_embeddings, file = "./response_embeddings_reviews_obi.RData")
+```
+
+```{r pca, message=FALSE}
+# Daten laden und Matrix extrahieren
+load("./response_embeddings_reviews_obi.RData")
+matrix_embeddings_reviews <- get_embedding_matrix(response_embeddings)
+
+# Dimensionsreduktion (PCA)
+pca <- prcomp(matrix_embeddings_reviews)
+kumulative_varianz <- cumsum(pca$sdev^2 / sum(pca$sdev^2))
+
+# Ergebnisse an Dataframe anhängen
+reviews <- reviews %>%
+  mutate(pc1 = pca$x[, 1], 
+         pc2 = pca$x[, 2])
+```
+
+```{r PCA, fig.cap= "Die Kundenreviews im Ähnlichkeitsraum der PCA. Wenn Sie mit der Maus über die Signaturen fahren, erscheinen die entsprechenden Texte der Reviews."}
+# Vorbereitung für die Visualsierung: Legendenvariable
+levels <- unique(reviews$legende) %>%
+  sort(decreasing = TRUE)
+reviews <- reviews %>%
+  mutate(legende = factor(legende, levels = levels))
+
+# Visualsierung: Kundenreviews im semantischen Ähnlichkeitsraum
+plot_ly(data = reviews, x = ~pc1, y = ~pc2, color = ~legende,
+        colors = rev(viridis(5)), type = "scatter", mode = "markers", hoverinfo = "text",
+        text = ~str_wrap(review, width = 50)) %>%
+  layout(title = "Kundenreviews im semantischen Ähnlichkeitsraum", margin = list(t = 50),
+         legend = list(x = 0.02, y = 0.02, bordercolor = "#E2E2E2", borderwidth = 2))
+```
+
+Mit Hilfe einer PCA können die Kundenreviews im semantischen Ähnlichkeitsraum abgebildet werden (Abb.\@ref(fig:PCA)). In diesem Raum liegen Reviews mit einem ähnlichen Text nahe beeinder. Reviews mit einer abweichenden Semantik befinden sich hingegen weiter voneinander entfernt. Der semantische Ähnlichkeitsraum wird durch die ersten beiden Hauptkomponenten definiert, die insgesamt `r round(kumulative_varianz[2]*100, 0)` % der Varianz erklären. In Anbetracht der Tatsache, dass die PCA `r length(kumulative_varianz)` Achsen extrahiert hat, ist dies ein ausgesprochen gutes Ergebnis.
+
+Mich persönlich fasziniert insbesondere das unüberwachte Lernen, weil ich damit Variablen herauskitzeln kann, die in dem Datensatz so eigentlich garnicht vorhanden sind. In dem hiesigen Anwendungsfall basiert die Berechnung auf den embeddings, wohingegen die Bewertungen unberücksichtigt bleiben. Dennoch bildet die PCA dieses Merkmal ab! So sind die mit einem Stern assoziierten Reviews im Ähnlichkeitsraum oben links angeordnet. Je weiter man sich im Diagramm (Abb.\@ref(fig:PCA)) nach unten oder nach links bewegt, desto besser werden auch die mit den Reviews einhergehenden Bewertungen.
+
+Ich habe schon viele Textkorpora auf die hier vorgestellte Art und Weise ausgewertet. Oftmals kann man in den Ähnlichkeitsräumen der PCA Cluster erkennen, die thematische Schwerpunkte repräsentieren. Interessanterweise ist dies bei den Kundenreviews nicht der Fall. So wird die semantische Varianz hier in erster Linie durch die Kundenzufriedenheit bestimmt. Das könnte daran liegen, dass die Kunden gerade in den mit einer schlechten Bewertung einhergehenden längeren Reviews verschiedene Themen ansprechen. Aufgrund dieser Problematik werden die Revievs im Folgenden in einzelne Aussagen aufgesplittet.
