@@ -8,7 +8,7 @@ description: |
   Das ist eine Arbeitsprobe aus dem Themenbereich NLP. Im Rahmen dieser Arbeitsprobe 
   werden mit den embeddings eines Large Language Modells eine Hauptkomponentenanalyse, 
   ein Topic Modell und eine Semantische Suche durchgeführt. Als Beispieldatensatz 
-  dienen hier Reviews von Obi-Kunden. 
+  dienen hier Reviews von Obi-Kunden.
 github-repo: SaraSchiesberg/ArbeitsprobeNLP
 ---
 
