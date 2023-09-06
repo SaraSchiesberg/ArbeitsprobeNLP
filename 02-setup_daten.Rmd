@@ -4,7 +4,7 @@
 
 Ich bin eine passioniert R-Userin. Derzeit spielt diese Programmiersprache insbesondere im Rahmen meiner Lehrtätigkeit an der Universität Koblenz eine große Rolle. Dort unterrichte ich Statistik mit R für Studenten der BioGeowissenschaften. In der Regel verwende ich `ggplot`, weil mich die Stringenz der *"Grammar of Graphics"* überzeugt. Neuerdings begeistere ich mich jedoch zunehmend für interaktive Visualisierungen mit `plotly`.
 
-Diese Beispielanalyse basiert auf [*R-Markdown-Dateien*](https://rmarkdown.rstudio.com/). Ich schätze R-Markdown, weil die Kombination von Fließtext, Code und Output eine für andere gut nachvollziehbare Arbeitsweise und ein replizierbares Analyseergebnis gewährleistet. R-Markdown bietet vielfältige Ausgabeformate an. Ich entscheide mich hier für ein gitbook, weil ich so auch interaktive Visualisierungen mit `plotly` nutzen kann. Gemeinsam mit `plotly` lade ich weitere Pakete in meinen workspace.
+Diese Beispielanalyse basiert auf [*R-Markdown-Dateien*](https://rmarkdown.rstudio.com/). Ich schätze R-Markdown, weil die Kombination von Fließtext, Code und Output eine für andere gut nachvollziehbare Arbeitsweise und ein replizierbares Analyseergebnis gewährleistet. R-Markdown bietet vielfältige Ausgabeformate an. Hier wurden die R-Markdown-Dateien mit Hilfe des Paketes [bookdown](https://bookdown.org/) als gitbook gerendert. So kann ich auch die interaktiven Visualisierungen mit `plotly` nutzen. Gemeinsam mit `plotly` lade ich weitere Pakete in meinen workspace.
 
 ```{r setup, include = TRUE, message = FALSE, warning = FALSE}
 # Pakete laden
