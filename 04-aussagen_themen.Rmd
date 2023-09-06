@@ -1,0 +1,285 @@
+# Aussagen und Themen {#AussagenThemen}
+
+Man kann ***LLMs*** auch nutzen um Themen in großen Textkorpora zu identifizieren. Für diesen Zweck ist es in der Regel sinnvoll die Texte in kleinere Einheiten aufzusplitten. So sind die Modelle typischerweise trennschärfer, wenn die zu analysierenden Texte nur einzelne Aspekte ansprechen. Im Folgenden splitte ich die Reviews mit einem regelbasierten Ansatz in unterschiedliche Aussagen auf. 
+
+```{r aussagen}
+# Reviews in einzelne Aussagen splitten
+aussagen <- reviews %>%
+  select(id, bewertung, review) %>%
+  mutate(aussage = str_split(review, "(?<=[[:alnum:]]{3})\\.|\\!|\\?|\\•")) %>% # mindestens drei alphanumerische Zeichen vor dem Punkt, Ausrufezeichen, Fragezeichen oder Bullet-Punkt
+  unnest(aussage) %>%
+  mutate(aussage = str_trim(aussage),
+         aussage = tolower(aussage)) %>%
+  filter(grepl("\\b\\w+\\b|\\b\\d+\\b", aussage, perl = TRUE)) # mindestens 2 durch eine Leerstelle getrennte Wörter und Zahlen  
+```
+
+Hier kommen zwei verschiedene Techniken zum Einsatz. Das ist zum einen die *explorative* Technik des [Topic Modellings](#TopMod). Bei dieser Methodik geben die Analysten keine Themen vor, sondern leiten diese ganz ergebnisoffen aus den Daten ab. Auf diese Art und Weise offenbart ein Topic Modell, was wirklich in den Daten steckt.
+
+Manchmal stellen Stakeholder sehr spezifische Fragen, die sich nicht mit den Clustern eines Topic Models beantworten lassen. Aufgrund dessen kommt hier auch eine hochmoderne [Semantische Suche](#SemSu) zum Einsatz. Mit einer solchen *konfirmatischen* Vorgehensweise wird die Präsenz eines vorab definierten Konzeptes in den Daten überprüft. In dem hiesigen Anwendungsfalls sind dies positive und negative Statements zu einzelnen Themen.
+
+## Topic Modelling {#TopMod}
+
+Nur allzuoft werden Themen in großen Textcorpora mit Hilfe einfacher Suchabfragen ermittelt. Auf diese Art und Weise verkennen Analysten, worum es in den Texten wirklich geht, weil sie nur jene Themen herausstellen, die sie eh schon im Kopf haben. Für diese Problematik stellt das Topic Modelling als explorative Technik einen Lösungsansatz dar. Früher habe ich Themen mit *Latenten Dirichlet Allokationen (LDA)* modelliert. Ich erinnere mich noch gut daran, wie ich das erste Mal ein neuronales Topic Modelling durchgeführt habe, weil mich die Steigerung der Ergebnisqualität so beeindruckt hat.
+
+Die LDA basiert im Prinzip auf einem *bag-of-words* Modell in dem der Wortkontext verloren ist. Dahingegen liegen dem neuronalen Topic Modelling die embeddings eines ***LLM*** zu Grunde. Im Laufe meiner Karriere habe ich für diesen Zweck insbesondere das Python-Paket [BERTopic](https://maartengr.github.io/BERTopic/index.html) genutzt.
+
+Für die hier voliegende Beispielanalyse mit R verwende ich ein einfache, effektive Vorgehensweise. In deren Rahmen werden die embeddings für die Aussagen durch eine Dimensionsreduktion ausgewertet. Dabei entscheide ich mich für den [umap()](https://cran.r-project.org/web/packages/umap/vignettes/umap.html)-Algorithmus, weil dieser eine auf zwei Dimensionen beschränkte Repräsentation erzeugen kann. Die entsprechenden Koordinaten werden dann durch einen Clusteralgorithmus ausgewertet. Zu diesem Zwecke verwende ich [mclust()](https://www.rdocumentation.org/packages/mclust/versions/5.4.6/topics/Mclust), weil dieser Algorithmus auch Wahrscheinlichkeitswerte für die Zugehörigkeit zu einem Cluster ausgibt. Das hat sich in meiner Arbeit mit Social-Media-Posts als nützlich erwiesen, weil diese viel noise enthalten können. Die Modellierung wird so ausgeführt, dass die optimale Anzahl der Cluster automatisch bestimmt wird. Dann finden nur Aussagen Berücksichtigung, die höchstwahrscheinlich für einen Cluster sind.
+
+```{r request_aussage_ebeddings, eval=FALSE, include=TRUE}
+# Request embeddings
+response_aussagen <- get_embeddings(aussagen$aussage)
+
+# Daten speichern
+save(response_aussagen, file = "./response_embeddings_aussagen_obi.RData")
+```
+
+```{r clustern, results='hide'}
+# Daten laden und Matrix extrahieren
+load("./response_embeddings_aussagen_obi.RData")
+matrix_embeddings_aussagen <- get_embedding_matrix(response_aussagen)
+
+# Dimensionsreduktion und Clustern
+umap_aussagen <- umap(matrix_embeddings_aussagen, random_state = 333) # Seed für die Reproduzierbarkeit des stochastischen Modells
+cluster <- Mclust(umap_aussagen$layout)
+anz_cluster <- length(unique(cluster$classification))
+
+# Ergebnisse an Dataframe anhängen
+aussagen <- aussagen %>%
+  mutate(
+    umap1 = umap_aussagen$layout[, 1], 
+    umap2 = umap_aussagen$layout[, 2], 
+    cluster = case_when(
+      cluster$uncertainty > 0.1 ~ 0, # d.h. 95% p für einen Cluster
+      TRUE ~ cluster$classification)) %>%
+    group_by(cluster) %>%
+  mutate(anz = n()) %>%
+  ungroup() %>%
+  as.data.frame()
+
+# Themen benennen
+aussagen <- aussagen %>%
+  mutate(
+    thema = case_when(
+      cluster == 1 ~ paste("einfache, umkomplizierte Abwicklung, <br>n =", anz),
+      cluster == 2 ~ paste("Kritik an der Ware, <br>n =", anz), 
+      cluster == 3 ~ paste("positives Fazit zum Einkaufserlebnis, <br>n =", anz),
+      cluster == 4 ~ paste("positive Einkaufsbewertung, <br>n =", anz),
+      cluster == 5 ~ paste("Obi, <br>n =", anz),
+      cluster == 6 ~ paste("Warten, <br>n =", anz),
+      cluster == 7 ~ paste("Kundenservice, <br>n =", anz),
+      cluster == 8 ~ paste("schnell und günstig, <br>n =", anz), 
+      cluster == 9 ~ paste("schnelle Lieferung, <br>n =", anz),
+      TRUE ~ "x"
+    )
+  )
+```
+
+```{r TopMod, fig.cap = "Semantische Gruppen von Kundenaussagen. Wenn Sie mit der Maus über die Signaturen fahren, erscheint die entsprechende Aussagen sowie das Label und die Anzahl der Aussagen pro Cluster.", out.height = "600px"}
+# Vorbereitung Visualisierung: Farbschema, Legendenvariable
+farben <- c(viridis(anz_cluster), "#E2E2E2")
+levels <- aussagen %>%
+  arrange(anz) %>%
+  pull(thema) %>%
+  unique()
+aussagen <- aussagen %>% 
+  mutate(thema = factor(thema, levels = levels, ordered = TRUE))
+
+# Visualisierung: Semantische Gruppen
+plot_ly() %>%
+  add_trace(data = filter(aussagen, cluster == 0),
+            x = ~umap1, y = ~umap2, color = ~thema, colors = farben,
+            type = "scatter", mode = "markers", hoverinfo = "text",
+            text = ~paste("Aussage: ", str_wrap(aussage, width = 50)),
+            showlegend = FALSE) %>%
+  add_trace(data = filter(aussagen, cluster != 0), x = ~umap1, y = ~umap2,
+            color = ~thema, colors = viridis(10),
+            type = "scatter", mode = "markers", hoverinfo = "text", 
+            text = ~paste("Aussage: ", str_wrap(aussage, width = 50), 
+                          "<br>Label: ", thema),
+            showlegend = TRUE) %>%
+  layout(title = "Semantische Gruppen von Kundenaussagen",
+         legend = list(orientation = 'h', y = -0.2),
+         margin = list(t = 50), showlegend = TRUE)
+```
+
+Das Topic Modelling zeigt Cluster, die semantisch ähnliche Aussagen beinhalten. In dem hiesigen Anwendungsfall betreffen die beiden größten Themenkomplexe zwei ganz unterschiedliche Kundenerlebnisse. Das ist zum eine die [**einfache, umkomplizierte Abwicklung**]{style="color:`r farben[9]`"} und zum anderen das [**Warten**]{style="color:`r farben[6]`"}. Unter diesen beiden Gesichtspunkten beschreiben Kunden verschiedene Momente der Customer Journey. Diese reichen von der Bestellung im Online-Shop, dem Austausch von E-Mails, der Bezahlung bis hin zur Lieferung der Waren.
+
+In Abb. \@ref(fig:TopMod) ist links oben eine Gruppe von Statements zu finden, die eine [**postive Einkaufsbewertung**]{style="color:`r farben[7]`"} zum Ausdruck bringen. Besonders häufig ist hier die knappe Formulierung "*Alles gut*". Nahe bei dieser Gruppe befindet sich ein Cluster von Aussagen, die ein  [**positives Fazit zum Einkaufserlebnis**]{style="color:`r farben[4]`"} geben. In dieser Gruppe kommen die Empfindungen der Käufer durch Dankes-, Zufriedenheits- und Loyaltitätsbekundungen wesentlich stärker zum Ausdruck. 
+
+Einen weiteren Themenblock stellt die [**Kritik an der Ware**]{style="color:`r farben[8]`"} dar. Hierunter fallen beispielsweise Aussagen zur Warenqualität, Probleme beim Aufbau sowie Beschädigungen durch den Versand.  Da die Kunden [**Obi**]{style="color:`r farben[3]`"} nur selten direkt erwähnen, repräsentieren die Statements mit einer direkten Unternehmensnennung eine distinkte Gruppe im Themenmodell.   
+
+Die Aussagen über den [**Kundenservice**]{style="color:`r farben[2]`"} sind ganz überwiegend positiv konnotiert. In einem links daneben liegenden Cluster heben die Kunden insbesondere die Aspekte [**schnell und günstig **]{style="color:`r farben[5]`"} hervor. Nahe bei dieser Gruppe liegen die Statements zur [**schnellen Lieferung**]{style="color:`r farben[1]`"}, die im wesentlichen aus eben dieser Wortkombination bestehen. Aufgrund dieses immer gleichlautenden wordings erkennt die KI hier eine eigenständige Gruppe.
+
+Bei einer Inspektion von Abb. \@ref(fig:TopMod) mit der Hoverfunktion, kann man innnerhalb eines jeden Clusters Textpassagen antreffen, die hier eigentlich gar nicht so gut reinpassen. Dabei handelt es sich oftmals um Wörter, die keine Aussage im eigentlichen Sinne repräsentieren. Diese Wörter sind die Konsequenz eines Aufsplittens der Reviews durch einen regelbasierten Ansatz. Eine Verbesserung der Ergebnisqualität ist potentiell möglich, wenn man diesen Arbeitsschritt mit einem Verfahren des maschinellen Lernens durchführt. Da man für diesen Zweck Trainingsdaten benötigt, sprengt diese Vorgehensweise jedoch den Rahmen der vorliegenden Arbeitsprobe.  
+
+## Semantische Suche {#SemSu}
+
+Im Zusammenhang mit den **LLMs** fasziniert mich insbesondere die Zero-Shot-Klassifikation, weil man für diese Vorgehensweise keine Trainingsdaten braucht. Solche Trainingsdaten werden oftmals von einzelnen Analysten erzeugt, die alle Texte lesen und mit Labeln versehen. Im Laufe meiner Karriere habe ich viele Studenten bei dieser zeitintensiven Aufgabe betreut. Regelbasierte Ansätze, mit denen man bestimmte Wörter abfragt, gelten als kostengünstige Alternative für die Textklassifikation. Allerdings verkennt man mit einer solchen lexikalischen Suche oftmals die eigentliche Bedeutung des Textes. Dahingegen berücksichtigt eine [semantische Suche](https://github.com/openai/openai-cookbook/blob/main/examples/Semantic_text_search_using_embeddings.ipynb) die Bedeutung der Wörter. Auf diese Art und Weise ermöglichen LLMs eine sowohl kostengünstige als auch qualitativ hochwertige Textklassifikation. 
+
+Mit einer semantischen Suche kann ich den unstrukturierten Datenbestand der Kundenreviews gezielt nach spezifischen Aussagen durchforsten. Auf diese Art und Weise lässt es sich feststellen, was die Kunden an ihrem Einkaufserlebnis besonders schlecht oder aber gut finden. So können Unternehmen handlungsrelevante insights generieren. 
+
+Im Folgenden formuliere ich idealtypische Beispiele für verschiedene Aussagetypen. Diese Beispiele repräsentieren unterschiedliche Kundenerlebnisse. Wenn ein Kunde von einem solchen Erlebnis erzählt, weist diese Aussage eine hohe Ähnlichkeit zu dem entsprechenden Beispiel auf. Aufgrund dessen bestimme ich anschließend für jedes Beispiel die Ähnlichkeit zu allen Kundenaussagen. Diese Ähnlichkeit ist hier mathematisch als Kosinus-Distanz zwischen den entsprechenden embeddings definiert. 
+
+```{r}
+# Beispiele formulieren
+beispiele <- data.frame(
+  beispiel = c("die mitarbeiter sind freundlich. 
+               ich finde das personal zuvorkommend", 
+               "die mitarbeiter unfreundlich. 
+               ich finde das personal unhöflich", 
+               "die lieferung war schnell. 
+               ich habe die ware rechtzeitig erhalten", 
+               "die lieferung war langsam. 
+               ich habe lange auf die die ware gewartet",
+               "die produkte sind preiswert. 
+               ich habe einen günstigen preis bezahlt", 
+               "die produkte sind kostspielig. 
+               ich habe einen zu teueren preis bezahlt.", 
+               "der online-shop ist übersichlich. 
+               ich habe die produkte auf der website leicht gefunden", 
+               "der online-shop unübersichtlich. 
+               Ich habe schwierigkeiten gehabt, die produkte auf der website zu finden", 
+               "die produkte sind von hoher qualität. 
+               ich finde die warenbeschaffenheit gut", 
+               "die sind von niedriger qualität. 
+               ich finde die warenbeschaffenheit schlecht"),
+  aussagetyp = c("freundliche Mitarbeiter", "unfreundliche Mitarbeiter", 
+                 "schnelle Lieferung", "verzögerte Lieferung", 
+                 "günstige Preise", "zu teure Preise",
+                 "übersichtlicher Online-Shop", "unübersichtlicher Online-Shop",
+                 "gute Warenqualität", "schlechte Warenqualität"),
+  thema = c("Freundlichkeit der Mitarbeiter", "Freundlichkeit der Mitarbeiter", 
+            "Geschwindigkeit der Lieferung", "Geschwindigkeit der Lieferung", 
+            "Preise", "Preise",
+            "Übersichtlichkeit des Online-Shops", "Übersichtlichkeit des Online-Shops",
+            "Warenqualität", "Warenqualität"),
+  sentiment = c("positiv", "negativ", "positiv", "negativ", "positiv", 
+                "negativ", "positiv", "negativ", "positiv", "negativ")
+  )
+```
+
+Nun werden die embeddings für die Beispiele bestimmt. 
+
+```{r analoga_embeddings, eval=FALSE, include=TRUE}
+# Request embeddings 
+response_embeddings_beispiele <- get_embeddings(beispiele$beispiel)
+
+# Daten abspeichern
+save(response_embeddings_beispiele, file = "./response_embeddings_beispiele_obi.RData")
+```
+
+Jetzt erfolgt die Distanzberechnung zwischen den embeddings für die Beispiele und den embeddings der Kundenaussagen.
+
+```{r korrmatrix}
+# Embeddings laden und Matrix extrahieren
+load(file = "./response_embeddings_beispiele_obi.RData")
+matrix_embeddings_beispiele <- get_embedding_matrix(response_embeddings_beispiele)
+
+# Vorbereitung für die Distanzberechnung: Vektoren initialisieren
+thema <- character()
+typ <- character()
+sent <- character()
+bsp <- character()
+aus <- character()
+kos <- numeric()
+
+# Distanzberechnung mit verschachtelter Schleife
+for (bei_row in 1:nrow(matrix_embeddings_beispiele)) { #für jedes Beispiel
+  for (aus_row in 1:nrow(matrix_embeddings_aussagen)) { # für jede Aussage
+    thema <- append(thema, beispiele[bei_row, "thema"])
+    typ <- append(typ, beispiele[bei_row, "aussagetyp"])
+    sent <- append(sent, beispiele[bei_row, "sentiment"])
+    bsp <- append(bsp, beispiele[bei_row, "beispiel"])
+    aus <- append(aus, aussagen[aus_row, "aussage"])
+    kos <- append(kos, cosine(matrix_embeddings_beispiele[bei_row,],
+                         as.numeric(matrix_embeddings_aussagen[aus_row,])))
+  }
+}
+
+# Dataframe erstellen
+similarity <- data.frame(thema = thema, aussagetyp = typ, sentiment = sent, 
+                         beispiel = bsp, aussage = aus, kosinus = kos)
+```
+
+Ich möchte eine Visualisierung erzeugen, die sowohl relevante Datenstrukturen aufzeigt als auch eine Inspektion des Einzelfalls zulässt. Aufgrund dessen entscheide mich hier für eine Visualisierung durch einen Jitter-Plot. 
+
+```{r KosDist, fig.cap="Jitterplots zur Ähnlichkeit zwischen den Kundenaussagen und den Beispielstatements für verschiedene Aussaagetypen.", out.height="600px"}
+# Vorbereitung Visualisierung: Objekte initialsieren und definieren
+plots <- list()
+farben <- viridis(length(unique(beispiele$beispiel)))
+schwelle <- 0.875
+
+# Visualsierung: Jitterplots für positive und negative Statements
+for (row in 1:2) {
+  plots[[row]] <- plot_ly(
+    data = similarity %>% 
+      filter(sentiment == c("positiv", "negativ")[row])) %>%
+    add_trace(
+      y = ~kosinus, x = ~jitter(as.numeric(factor(thema))), 
+      type = "scatter", mode = "markers", color = ~thema, colors = farben,
+      marker = list(size = 3, opacity = 0.7), hoverinfo = "text", 
+      text = ~paste("<br>Aussage:", str_wrap(aussage, width = 30), 
+                    "<br>Aussagetyp:", aussagetyp, "<br>Beispiel: ", beispiel, 
+                    "<br>Kosinus-Distanz:", round(kosinus, 2))) %>%
+    add_segments(x = 0, xend = nrow(beispiele), y = schwelle, yend = schwelle,
+                 line = list(color = "black", width = 2)) %>%
+    layout(annotations = list(x = 5.7, y = 0.95, 
+                              text = paste("<b>", c("positiv", "negativ")[row], "<b>", sep = ""), 
+                              showarrow = FALSE, font = list(size = 12)), 
+           xaxis = list(range = c(0, 6), tickvals = 1:5, title = "Aussagetyp", 
+                        ticktext = ~str_wrap(unique(aussagetyp), 13)),
+           yaxis = list(range = c(0.7, 1), title = "Kosinus-Distanz"),
+           showlegend = FALSE)
+  }
+
+# Zusammenfügen der plots
+subplot(plots, nrows = 2, shareY = TRUE, shareX = FALSE, margin = 0.05) %>%
+  layout(margin = list(t = 50), 
+         title = "Die Ähnlichkeit zwischen den Kundenaussagen und den Beispielstatements")
+```
+In Abb. \@ref(fig:KosDist) repräsentiert jeder Datenpunkt eine Kundenaussage. Je höher ein Datenpunkt liegt, desto ähnlicher ist diese Aussage dem entsprechenden Beispielstatement für einen bestimmten Aussagetyp. Generell fallen die Kosinus-Distanzen hier mit einem Wertespektrum von `r min(round(similarity$kosinus, 2))` bis `r max(round(similarity$kosinus, 2))` sehr hoch aus. Das ist nicht verwunderlich, da auch die Beispielstatements als Kundenaussagen formuliert wurden. Besonders hohe Kosinus-Distanzen zeigen sich für den Aussagetyp **"schnelle Lieferung"**. Das harmoniert sehr gut mit der Tatsache dass diese Statements auch im neuronalen Topic Model ein eigenständiges Thema repräsentieren (Abb. \@ref(fig:TopMod)). Geringere Kosinus-Distanzen sind hingegen für Aussagen zu **"unfreundlichen Mitarbeitern**" oder aber "**teuren Preisen**" zu verzeichnen. Solche Statements sind auch im Topic Model nicht deutlich in Erscheinung getreten. 
+
+Da eine semantischen Suche die Bedeutung einer Aussage erfasst, hat ein Statement mit den Wörtern *„sendung kam früher als erwartet“* eine große Ähnlichkeit zu der Beispielaussage  *„die lieferung war schnell. ich habe die ware rechtzeitig erhalten“*.  Mit einer bloßen lexikalischen Suche hätte man diese Ähnlichkeit niemals erfassen können, weil die beiden Aussagen unterschiedliche Wörter beinhalten. Bei einer semantischen Suche liegt die Kunst eigentlich darin, wie man das Beispiel formuliert. In einem ersten Anlauf hatte ich das Beispiel für den Aussagetyp **verzögerte Lieferung** mit den Wörtern *„die lieferung war unpünktlich“* formuliert. Die entsprechenden Beispielstatements waren dann besonders ähnlich zu Kundenaussagen, die eine besonders rasche Zustellung loben, die früher als angekündigt erfolgte. Das ist aber nicht wirklich im Sinne der hier vorgestellten Analyse...
+
+Da Sprache ein nuanciertes und facettenreiches System ist, gefällt es mir eigentlich ganz gut mit einem Modell zu arbeiten das viele Abstufungen zulässt. In der Praxis ist es jedoch zielführender die Kundenaussagen einer einzelnen Kategorie zuzuweisen. Denn nur so kann man die für Stakeholder relevante Frage beantworten, wie oft ein bestimmter Aussagetyp vorkommt. 
+Im Folgenden werden Kundenaussagen deren Kosinus-Distanz zu einem bestimmten Beispielstatement höher als `r schwelle` ist dem entsprechenden Aussagetypen zugeordnet. Dieser arbiträre Schwellenwert wurde nach einer visuellen Inspektion von Abb. \@ref(fig:KosDist) gewählt. Die unterschiedlichen Aussagetypen repräsentieren für ein Thema genau eine positive und eine negative Merkmalsausprägung. Oftmals werden solche Sentimentsausprägungen durch gestapelte Balkendiagramme dargestellt. Diese Diagramme visualisieren ein prozentuales Verhältnis, das bei kleinen Fallzahlen keine Aussagekraft besitzen. Diese Problematik wird hier durch die Verwendung eines Marimekko-Charts umgangen. So zeigt bei dieser Darstellungsform die Balkenbreite den Stichprobenumfang an.  
+
+```{r PropPosNeg, echo=TRUE, fig.cap="Das prozentuale Verhältnis zwischen positiven und negativen Aussagen zu einem spezifischen Thema. Die Breite der Balken ist proportional zur Anzahl der Treffer."}
+# Vorbereitung Visualisierung: nach Themen zusammenfassende Tabelle 
+thema <- similarity %>%
+  filter(kosinus > schwelle) %>% 
+  count(sentiment, thema) %>%
+  pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) %>%
+  mutate(n = positiv + negativ, 
+         proz_positiv = positiv/n,
+         proz_negativ = negativ/n, 
+         breite = n/sum(n)) %>% # Breite der Säulen
+  arrange(proz_negativ) %>%
+  mutate(position = cumsum(breite)) %>%
+  mutate(position = ifelse(row_number() == 1, position/2, (lag(position) + position) / 2+(row_number() - 1) * 0.05)) # Position der Säulen mit einem Abstand von 0.05 
+
+# Vorbereitung Visualisierung: Farbschema
+farben <- viridis(2)
+
+# Visualisierung Marimekko-Chart Proportionen pro Thema
+plot_ly(data = thema, y = ~position, orientation = "h") %>%
+  add_trace(x = ~proz_negativ, name = "negativ", width = ~breite, type = "bar",
+            marker = list(color = farben[1]), 
+            textposition = "none", hoverinfo = "text", 
+            text = ~paste("<br>Anzahl: ", negativ, 
+                          "<br>Prozent: ", round(proz_negativ*100, 0), "%", sep = "")) %>%
+  add_trace(x = ~proz_positiv, name = "positiv", width = ~breite, type = "bar",
+            marker = list(color = farben[2]), 
+            textposition = "none", hoverinfo = "text", 
+            text = ~paste("<br>Anzahl: ", positiv, 
+                          "<br>Prozent: ", round(proz_positiv*100, 0), "%", sep = "")) %>%
+  layout(barmode = 'stack', title = "Verhältnis zwischen positiven und negativen Aussagen",
+         yaxis = list(title = "",
+                      tickvals = thema$position,
+                      ticktext = thema$thema),
+         xaxis = list(title = "Anteil", tickformat = ".0%"), margin = list(t = 50))
+```
+
+Im Ergebnis zeigt sich für die **Geschwindigkeit der Lieferung** eine größere Datenserie (Abb. \@ref(fig:PropPosNeg)). Dementsprechend scheint dies ein Aspekt zu sein, der die Kunden besonders stark bewegt. Unter den Statements zur **Geschwindigkeit der Lieferung** gibt es mehr negative Aussagen als zu all den anderen hier untersuchten Themen. Allerdings ist für diese Themen die Gesamtanzahl der Aussagen auch sehr viel niedriger. Aufgrund dessen gehe ich davon aus, dass diese Themen die Kunden weniger stark beschäftigen. 
+
+Für ein tiefergreifendes Verständis der Kundenaussagen wäre es in Zukunft wünschenswert mit einem umfangreichen Katalog an Aussagetypen zu arbeiten, der die vielfältigen Aspekte der Customer Journey besser abbildet. Zudem könnte es sich auch als vorteilhaft erweisen den Beobachtungszeitraum so auszudehnen, dass mehr Beobachtungen pro Thema vorliegen. 
