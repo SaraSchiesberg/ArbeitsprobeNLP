@@ -2,9 +2,9 @@
 
 ## R-Markdown {#R-Markdown}
 
-Ich bin eine passioniert R-Userin. Derzeit spielt diese Programmiersprache insbesondere im Rahmen meiner Lehrtätigkeit an der Universität Koblenz eine große Rolle. Dort unterrichte ich Statistik mit R für Studenten der BioGeowissenschaften. In der Regel verwende ich `ggplot`, weil mich die Stringenz der *"Grammar of Graphics"* überzeugt. Neuerdings begeistere ich mich jedoch zunehmend für interaktiven Visualsierungen mit `plotly`.
+Ich bin eine passioniert R-Userin. Derzeit spielt diese Programmiersprache insbesondere im Rahmen meiner Lehrtätigkeit an der Universität Koblenz eine große Rolle. Dort unterrichte ich Statistik mit R für Studenten der BioGeowissenschaften. In der Regel verwende ich `ggplot`, weil mich die Stringenz der *"Grammar of Graphics"* überzeugt. Neuerdings begeistere ich mich jedoch zunehmend für interaktive Visualisierungen mit `plotly`.
 
-Diese Beispielanalyse basiert auf [*R-Markdown-Dateien*](https://rmarkdown.rstudio.com/), die mit Hilfe des Paketes als [*bookdown*](https://bookdown.org/) gerendert wurden. Ich schätze R-Markdown, weil die Kombination von Fließtext, Code und Output eine für andere gut nachvollziehbare Arbeitsweise und ein replizierbares Analyseergebnis gewährleistet. R-Markdown bietet vielfältigen Ausgabeformaten an. Ich entscheide mich hier für ein gitbook, weil ich so auch interaktive Visualsierungen mit `plotly` nutzen kann. Gemeinsam mit `plotly` lade ich weitere Pakete in meinen workspace.
+Diese Beispielanalyse basiert auf [*R-Markdown-Dateien*](https://rmarkdown.rstudio.com/). Ich schätze R-Markdown, weil die Kombination von Fließtext, Code und Output eine für andere gut nachvollziehbare Arbeitsweise und ein replizierbares Analyseergebnis gewährleistet. R-Markdown bietet vielfältige Ausgabeformate an. Ich entscheide mich hier für ein gitbook, weil ich so auch interaktive Visualisierungen mit `plotly` nutzen kann. Gemeinsam mit `plotly` lade ich weitere Pakete in meinen workspace.
 
 ```{r setup, include = TRUE, message = FALSE, warning = FALSE}
 # Pakete laden
@@ -78,11 +78,11 @@ plot_ly(type = 'table',
           fill = list(color = "#D0E2EF")))
 ```
 
-Die Rohdaten umfassen insgesamt `r nrow(daten)` Bewertungen (Abb. \@ref(fig:Inspektion)). Die Bewertungen wurden in dem Zeitraum vom `r min(daten$datum)` bis zum `r max(daten$datum)` veröffentlicht. Bei den Bewertungen handelt es sich um Sterne, die Kunden an **Obi** vergeben haben. Ein einzelner Stern stellt das negativeste Feedback dar und die bestmögliche Bewertung sind 5 Sterne. In machen Fällen haben die Kunden keine Review zu ihrer Bewertung geschrieben. Die Sprache der Reviews wird ausnahmslos mit "`r unique(daten$sprache)`" angegeben.
+Die Rohdaten umfassen insgesamt `r nrow(daten)` Bewertungen (Abb. \@ref(fig:Inspektion)). Die Bewertungen wurden in dem Zeitraum vom `r min(daten$datum)` bis zum `r max(daten$datum)` veröffentlicht. Bei den Bewertungen handelt es sich um Sterne, die Kunden an **Obi** vergeben haben. Ein einzelner Stern stellt das negativste Feedback dar und die bestmögliche Bewertung sind 5 Sterne. In manchen Fällen haben die Kunden keine Review zu ihrer Bewertung geschrieben. Die Sprache der Reviews wird ausnahmslos mit "`r unique(daten$sprache)`" angegeben.
 
 ## Large Language Modell {#LLM}
 
-Derzeit sind die Large Language Modells (LLMs) in aller Munde. Im Hinblick auf die Textanalyse sind diese Modelle insbesondere für eine Umwandlung der Texte in embeddings relevant. Für diese Beispielanalyse brauche ich embeddings, die man sowohl für die Hauptkomponentenanalyse, das Topic Modelling, wie auch für die semantische Suche nutzen kann. Diese Anforderung erfüllt [*"text-embedding-ada-002"*](https://openai.com/blog/new-and-improved-embedding-model), das über die API von Open-AI nutzbar ist. Vorab berechne ich die Kosten für das mit 0.0004 \$ pro 1000 tokens bepreiste Model.
+Derzeit sind die Large Language Modells (LLMs) in aller Munde. Im Hinblick auf die Textanalyse sind diese Modelle insbesondere für eine Umwandlung der Texte in embeddings relevant. Für diese Beispielanalyse brauche ich embeddings, die man sowohl für die Hauptkomponentenanalyse, das Topic Modelling, wie auch für die semantische Suche nutzen kann. Diese Anforderung erfüllt [*"text-embedding-ada-002"*](https://openai.com/blog/new-and-improved-embedding-model), das über die API von Open-AI nutzbar ist. Vorab berechne ich die Kosten für das mit 0.0004 \$ pro 1000 token bepreiste Model.
 
 ```{r kosten}
 # Kostenkalkulation
@@ -92,7 +92,7 @@ costs <- daten$review %>%
   sum()/1000*0.0004
 ```
 
-Die Kosten sind mit `r round(costs, 4)` \$ sehr gut zu verschmerzen. Weiter gehts mit den Funktionsdefinitionen für die Request!
+Die Kosten sind mit `r round(costs, 4)` \$ sehr gut zu verschmerzen. Weiter geht es mit den Funktionsdefinitionen für die Request!
 
 ```{r funktionsdefinitionen}
 # Funktionsdefinition: embeddings abfragen

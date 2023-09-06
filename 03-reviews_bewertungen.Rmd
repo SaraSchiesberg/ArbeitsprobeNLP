@@ -1,6 +1,6 @@
 # Reviews und Bewertungen {#ReviesBewertungen}
 
-Im Folgenden steht der Zusammenhang zwischen den Reviews und den Bewertungen im Fokus des Interesses. Die Auseinandersetzung mit dem [Textumfang](#Textumfang) der Reviews erfolgt am Beginn der Untersuchungen, weil damit eine quellenkritische Fragestellung einhergeht. So ist es interessant, ob in dem Textmaterial alle Kunden gleichermassen repräsentieren sind. Alternativ könnte hier auch eine Verzerrung durch die Kundenzufriedenheit vorliegen. Anschließend wird die [semantische Varianz](#SemVar) durch eine Hauptkomponentenanalyse ausgewertet. Dieses explorative Verfahren vermittelt typischerweise eine gute Vorstellung von den relevanten Wirkmechanismen im Datensatz.
+Im Folgenden steht der Zusammenhang zwischen den Reviews und den Bewertungen im Fokus des Interesses. Die Auseinandersetzung mit dem [Textumfang](#Textumfang) der Reviews erfolgt am Beginn der Untersuchungen, weil damit eine quellenkritische Fragestellung einhergeht. So ist es interessant, ob in dem Textmaterial alle Kunden gleichermaßen repräsentiert sind. Alternativ könnte hier auch eine Verzerrung durch die Kundenzufriedenheit vorliegen. Anschließend wird die [semantische Varianz](#SemVar) durch eine Hauptkomponentenanalyse ausgewertet. Dieses explorative Verfahren vermittelt typischerweise eine gute Vorstellung von den relevanten Wirkmechanismen im Datensatz.
 
 Um die Reviews im Zusammenhang mit den Bewertungen zu analysieren, werden vorab verschiedene Objekte definiert.
 
@@ -71,7 +71,7 @@ Für **OBI** ist eine hohe Kundenzufriedenheit zu verzeichnen. So haben `r round
 In insgesamt `r round((1-nrow(reviews)/nrow(daten))*100)`% der Fälle haben die Kunden keine Review zu ihrer Bewertung geschrieben. Es stellt sich die Frage, ob diese Kunden **Obi** anders bewerten als die Kunden, die auch eine Review geschrieben haben.
 
 ```{r TextBew, fig.cap = "Vergleich zwischen Bewertungen mit und ohne Review."}
-# Vorbereitung für die Visualisierung: Farbschema
+# Vorbereitung Visualisierung: Farbschema
 farbe <- viridis(3)
 
 # Visualisierung: Kundenzufriedenheit im Vergleich
@@ -104,7 +104,7 @@ Ein Vergleich zwischen den Bewertungen mit und ohne Review zeigt, dass die unzuf
 Ich möchte diese Überlegungen noch weiter vertiefen. Daher wird im Folgenden die Textlänge der Reviews differenziert nach dem Zufriedenheitsniveau ausgewertet.
 
 ```{r TextlaengeBew,  fig.cap = "Densityplot zur Anzahl der Wörter differenziert nach der Bewertung. Die vertikalen Linien geben die Mediane für die entsprechenden Stichproben an.", out.height='600px'}
-# Vorbereitung für die Visualsierung: Farbschema, Plotliste, Legendenvariable
+# Vorbereitung Visualisierung: Farbschema, Plotliste, Legendenvariable
 farbe <- viridis(5) 
 plots <- list()
 reviews <- reviews %>%
@@ -175,13 +175,13 @@ reviews <- reviews %>%
 ```
 
 ```{r PCA, fig.cap= "Die Kundenreviews im Ähnlichkeitsraum der PCA. Wenn Sie mit der Maus über die Signaturen fahren, erscheinen die entsprechenden Texte der Reviews."}
-# Vorbereitung für die Visualsierung: Legendenvariable
+# Vorbereitung Visualisierung: Legendenvariable
 levels <- unique(reviews$legende) %>%
   sort(decreasing = TRUE)
 reviews <- reviews %>%
   mutate(legende = factor(legende, levels = levels))
 
-# Visualsierung: Kundenreviews im semantischen Ähnlichkeitsraum
+# Visualisierung: Kundenreviews im semantischen Ähnlichkeitsraum
 plot_ly(data = reviews, x = ~pc1, y = ~pc2, color = ~legende,
         colors = rev(viridis(5)), type = "scatter", mode = "markers", hoverinfo = "text",
         text = ~str_wrap(review, width = 50)) %>%
@@ -189,8 +189,8 @@ plot_ly(data = reviews, x = ~pc1, y = ~pc2, color = ~legende,
          legend = list(x = 0.02, y = 0.02, bordercolor = "#E2E2E2", borderwidth = 2))
 ```
 
-Mit Hilfe einer PCA können die Kundenreviews im semantischen Ähnlichkeitsraum abgebildet werden (Abb.\@ref(fig:PCA)). In diesem Raum liegen Reviews mit einem ähnlichen Text nahe beeinder. Reviews mit einer abweichenden Semantik befinden sich hingegen weiter voneinander entfernt. Der semantische Ähnlichkeitsraum wird durch die ersten beiden Hauptkomponenten definiert, die insgesamt `r round(kumulative_varianz[2]*100, 0)` % der Varianz erklären. In Anbetracht der Tatsache, dass die PCA `r length(kumulative_varianz)` Achsen extrahiert hat, ist dies ein ausgesprochen gutes Ergebnis.
+Mit Hilfe einer PCA können die Kundenreviews im semantischen Ähnlichkeitsraum abgebildet werden (Abb.\@ref(fig:PCA)). In diesem Raum liegen Reviews mit einem ähnlichen Text nahe beieinander. Reviews mit einer abweichenden Semantik befinden sich hingegen weiter voneinander entfernt. Der semantische Ähnlichkeitsraum wird durch die ersten beiden Hauptkomponenten definiert, die insgesamt `r round(kumulative_varianz[2]*100, 0)` % der Varianz erklären. In Anbetracht der Tatsache, dass die PCA `r length(kumulative_varianz)` Achsen extrahiert hat, ist dies ein ausgesprochen gutes Ergebnis.
 
-Mich persönlich fasziniert insbesondere das unüberwachte Lernen, weil ich damit Variablen herauskitzeln kann, die in dem Datensatz so eigentlich garnicht vorhanden sind. In dem hiesigen Anwendungsfall basiert die Berechnung auf den embeddings, wohingegen die Bewertungen unberücksichtigt bleiben. Dennoch bildet die PCA dieses Merkmal ab! So sind die mit einem Stern assoziierten Reviews im Ähnlichkeitsraum oben links angeordnet. Je weiter man sich im Diagramm (Abb.\@ref(fig:PCA)) nach unten oder nach links bewegt, desto besser werden auch die mit den Reviews einhergehenden Bewertungen.
+Mich persönlich fasziniert insbesondere das unüberwachte Lernen, weil ich damit Variablen herauskitzeln kann, die in dem Datensatz so eigentlich gar nicht vorhanden sind. In dem hiesigen Anwendungsfall basiert die Berechnung auf den embeddings, wohingegen die Bewertungen unberücksichtigt bleiben. Dennoch bildet die PCA dieses Merkmal ab! So sind die mit einem Stern assoziierten Reviews im Ähnlichkeitsraum oben links angeordnet. Je weiter man sich im Diagramm (Abb.\@ref(fig:PCA)) nach unten oder nach links bewegt, desto besser werden auch die mit den Reviews einhergehenden Bewertungen.
 
-Ich habe schon viele Textkorpora auf die hier vorgestellte Art und Weise ausgewertet. Oftmals kann man in den Ähnlichkeitsräumen der PCA Cluster erkennen, die thematische Schwerpunkte repräsentieren. Interessanterweise ist dies bei den Kundenreviews nicht der Fall. So wird die semantische Varianz hier in erster Linie durch die Kundenzufriedenheit bestimmt. Das könnte daran liegen, dass die Kunden gerade in den mit einer schlechten Bewertung einhergehenden längeren Reviews verschiedene Themen ansprechen. Aufgrund dieser Problematik werden die Revievs im Folgenden in einzelne Aussagen aufgesplittet.
+Ich habe schon viele Textkorpora auf die hier vorgestellte Art und Weise ausgewertet. Oftmals kann man in den Ähnlichkeitsräumen der PCA Cluster erkennen, die thematische Schwerpunkte repräsentieren. Interessanterweise ist dies bei den Kundenreviews nicht der Fall. So wird die semantische Varianz hier in erster Linie durch die Kundenzufriedenheit bestimmt. Das könnte daran liegen, dass die Kunden gerade in den mit einer schlechten Bewertung einhergehenden längeren Reviews verschiedene Themen ansprechen. Aufgrund dieser Problematik werden die Reviews im Folgenden in einzelne Aussagen aufgesplittet.

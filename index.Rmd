@@ -20,7 +20,7 @@ github-repo: SaraSchiesberg/ArbeitsprobeNLP
 <img src="./Porträt.jpg" alt="Bildbeschreibung" style="width: 100%; border: 1px solid #ccc;"/>
 :::
 
-**Guten Tag!** Mein Name ist Sara Schiesberg und ich begeistere mich für Machine Learning im Allgemeinen und für Natural Langualge Processing (NLP) im Speziellen. Ich freue mich, Ihnen hier einen Einblick in meine Arbeit geben zu dürfen! 
+**Guten Tag!** Mein Name ist Sara Schiesberg und ich begeistere mich für Machine Learning im Allgemeinen und für Natural Language Processing (NLP) im Speziellen. Ich freue mich, Ihnen hier einen Einblick in meine Arbeit geben zu dürfen! 
 
 Früher war es notwendig, unzählige Texte manuell zu durchforsten um deren Bedeutung zu erfassen. Heutzutage kann dies mit den Methoden der künstlichen Intelligenz wesentlich zeit- und kosteneffizienter geschehen. Zu diesem Zwecke zeige ich in dieser Arbeitsprobe eine Vorgehensweise mit einem Large Language Model (LLM). 
 
