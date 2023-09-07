@@ -24,7 +24,7 @@ Mein Name ist Sara Schiesberg und ich begeistere mich für Machine Learning im A
 
 Früher war es notwendig, unzählige Texte manuell zu durchforsten um deren Bedeutung zu erfassen. Heutzutage kann dies mit den Methoden der künstlichen Intelligenz wesentlich zeit- und kosteneffizienter geschehen. Ich zeige Ihnen in dieser Arbeitsprobe eine entsprechende Vorgehensweise mit einem Large Language Model (LLM). 
 
-Konkret wird hier ein Fallbeispiel aus dem Bereich Customer Relationship Management umgesetzt. Darüber hinaus gibt es jedoch vielfältige andere Einsatzmöglichkeiten für die hier verwendeten Methoden. So kann man mit dieser Vorgehensweise beispielsweise die Meinungsdynamiken in Social-Media-Gruppen verfolgen. Auf diese Art und Weise lassen sich so politische Trends im öffentlichen Raum identifizieren. Im Bereich der Gesundheitsforschung können wir mithilfe dieser Technologien medizinische Daten effektiver analysieren und personalisierte Behandlungsansätze entwickeln 
+Konkret wird hier ein Fallbeispiel aus dem Bereich Customer Relationship Management umgesetzt. Darüber hinaus gibt es jedoch vielfältige andere Einsatzmöglichkeiten für die hier verwendeten Methoden. So kann man mit dieser Vorgehensweise die Meinungsdynamiken in Social-Media-Gruppen verfolgen. Auf diese Art und Weise lassen sich politische Trends im öffentlichen Raum identifizieren. Im Bereich der Gesundheitsforschung können wir beispielsweise mithilfe dieser Technologien medizinische Daten effektiver analysieren und personalisierte Behandlungsansätze entwickeln 
 
 Lassen Sie uns nun in die Praxis eintauchen und anhand eines konkreten Beispiels die Anwendung und Wirkung dieser spannenden Technologien genauer untersuchen.
 
