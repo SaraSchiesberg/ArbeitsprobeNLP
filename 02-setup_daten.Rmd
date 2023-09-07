@@ -2,9 +2,9 @@
 
 ## R-Markdown {#R-Markdown}
 
-Ich bin eine passioniert R-Userin. Derzeit spielt diese Programmiersprache insbesondere im Rahmen meiner Lehrtätigkeit an der Universität Koblenz eine große Rolle. Dort unterrichte ich Statistik mit R für Studenten der BioGeowissenschaften. In der Regel verwende ich `ggplot`, weil mich die Stringenz der *"Grammar of Graphics"* überzeugt. Neuerdings begeistere ich mich jedoch zunehmend für interaktive Visualisierungen mit `plotly`.
+Ich bin eine passionierte R-Userin. Derzeit spielt diese Programmiersprache insbesondere im Rahmen meiner Lehrtätigkeit an der Universität Koblenz eine große Rolle. Dort unterrichte ich Statistik mit R für Studenten der BioGeowissenschaften. In der Regel verwende ich `ggplot`, weil mich die Stringenz der *"Grammar of Graphics"* überzeugt. Neuerdings begeistere ich mich jedoch zunehmend für interaktive Visualisierungen mit `plotly`.
 
-Diese Beispielanalyse basiert auf [*R-Markdown-Dateien*](https://rmarkdown.rstudio.com/). Ich schätze R-Markdown, weil die Kombination von Fließtext, Code und Output eine für andere gut nachvollziehbare Arbeitsweise und ein replizierbares Analyseergebnis gewährleistet. R-Markdown bietet vielfältige Ausgabeformate an. Hier wurden die R-Markdown-Dateien mit Hilfe des Paketes [bookdown](https://bookdown.org/) als gitbook gerendert. So kann ich auch die interaktiven Visualisierungen mit `plotly` nutzen. Gemeinsam mit `plotly` lade ich weitere Pakete in meinen workspace.
+Diese Beispielanalyse basiert auf [*R-Markdown-Dateien*](https://rmarkdown.rstudio.com/). Ich schätze R-Markdown, weil die Kombination von Fließtext, Code und Output eine für Andere gut nachvollziehbare Arbeitsweise und ein replizierbares Analyseergebnis gewährleistet. R-Markdown bietet vielfältige Ausgabeformate an. Hier wurden die R-Markdown-Dateien mit Hilfe des Paketes [bookdown](https://bookdown.org/) als gitbook gerendert. So kann ich auch die interaktiven Visualisierungen mit `plotly` nutzen. Gemeinsam mit `plotly` lade ich weitere Pakete in meinen workspace.
 
 ```{r setup, include = TRUE, message = FALSE, warning = FALSE}
 # Pakete laden
@@ -29,7 +29,7 @@ knitr::opts_chunk$set(warning = FALSE, messages = FALSE)
 
 ## Daten {#Daten}
 
-Im Rahmen meiner derzeitigen Tätigkeit als Expert Data Science bei pressrelations arbeite ich mit Zeitungsartikeln und Social-Media-Posts. Hier geht es hingegen um Reviews, die Obikunden auf [www.trustedshops.de](https://www.trustedshops.de/bewertung/info_X8BD75374EABBAC74ABF111D4CBF94A65.html?sort=date) hinterlassen haben. Typischerweise basieren Arbeitsproben auf  Standartbeispieldatensätzen, wie wir sie von www.kaggle.com kennen. Ich habe mich hier bewusst gegen ein solches Standartbeispiel entschieden, um Ihnen ein möglichst realistisches Beispiel zu geben. Zu diesem Zwecke stelle ich mit dem ***Scraping*** eine Stichprobe zusammen, welche die ersten 50 Seiten einer nach dem Datum sortierten Abfrage enthält. Diese werden als anonymisierter Datensatz abgespeichert, der nur die analyserelevanten Variablen enthält.
+Im Rahmen meiner derzeitigen Tätigkeit als Expert Data Science bei pressrelations arbeite ich mit Zeitungsartikeln und Social-Media-Posts. In dieser Arbeitsprobe geht es hingegen um Reviews, die Obikunden auf [www.trustedshops.de](https://www.trustedshops.de/bewertung/info_X8BD75374EABBAC74ABF111D4CBF94A65.html?sort=date) hinterlassen haben. Typischerweise basieren Arbeitsproben auf  Standardbeispieldatensätzen, wie wir sie von www.kaggle.com kennen. Ich habe mich hier bewusst gegen ein solches Standardbeispiel entschieden, um Ihnen ein möglichst realistisches Beispiel zu geben. Zu diesem Zwecke stelle ich mit dem ***Scraping*** eine Stichprobe zusammen, welche die ersten 50 Seiten einer nach dem Datum sortierten Abfrage enthält. Diese werden als anonymisierter Datensatz abgespeichert, der nur die analyserelevanten Variablen enthält.
 
 ```{r scraping, eval=FALSE, message=FALSE}
 # Scraping
@@ -80,9 +80,9 @@ plot_ly(type = 'table',
 
 Die Rohdaten umfassen insgesamt `r nrow(daten)` Bewertungen (Abb. \@ref(fig:Inspektion)). Die Bewertungen wurden in dem Zeitraum vom `r min(daten$datum)` bis zum `r max(daten$datum)` veröffentlicht. Bei den Bewertungen handelt es sich um Sterne, die Kunden an **Obi** vergeben haben. Ein einzelner Stern stellt das negativste Feedback dar und die bestmögliche Bewertung sind 5 Sterne. In manchen Fällen haben die Kunden keine Review zu ihrer Bewertung geschrieben. Die Sprache der Reviews wird ausnahmslos mit "`r unique(daten$sprache)`" angegeben.
 
-## Large Language Modell {#LLM}
+## Large Language Model {#LLM}
 
-Derzeit sind die Large Language Modells (LLMs) in aller Munde. Im Hinblick auf die Textanalyse sind diese Modelle insbesondere für eine Umwandlung der Texte in embeddings relevant. Für diese Beispielanalyse brauche ich embeddings, die man sowohl für die Hauptkomponentenanalyse, das Topic Modelling, wie auch für die semantische Suche nutzen kann. Diese Anforderung erfüllt [*"text-embedding-ada-002"*](https://openai.com/blog/new-and-improved-embedding-model), das über die API von Open-AI nutzbar ist. Vorab berechne ich die Kosten für das mit 0.0004 \$ pro 1000 token bepreiste Model.
+Derzeit sind die Large Language Models (LLMs) in aller Munde. Im Hinblick auf die Textanalyse sind diese Modelle insbesondere für eine Umwandlung der Texte in embeddings relevant. Für diese Beispielanalyse brauche ich embeddings, die man sowohl für die Hauptkomponentenanalyse, das Topic Modelling, wie auch für die semantische Suche nutzen kann. Diese Anforderung erfüllt [*"text-embedding-ada-002"*](https://openai.com/blog/new-and-improved-embedding-model), das über die API von Open-AI nutzbar ist. Vorab berechne ich die Kosten für das mit 0.0004 \$ pro 1000 token bepreiste Model.
 
 ```{r kosten}
 # Kostenkalkulation

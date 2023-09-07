@@ -64,7 +64,7 @@ plot_ly(bewertungen, x = ~bewertung, y = ~ges_anteil, type = "scatter",
     margin = list(t = 50)
   )
 ```
-Für **OBI** ist eine hohe Kundenzufriedenheit zu verzeichnen. So haben `r round(bewertungen[5, "ges_anteil"]*100,1)`% der Kunden fünf Sterne vergeben (Abb. \@ref(fig:LinieSterne)). Die Bewertung mit 2 Sterne sind mit nur `r round(bewertungen[2, "ges_anteil"]*100, 1)`% am seltensten vertreten.
+Für **OBI** ist eine hohe Kundenzufriedenheit zu verzeichnen. So haben `r round(bewertungen[5, "ges_anteil"]*100,1)`% der Kunden fünf Sterne vergeben (Abb. \@ref(fig:LinieSterne)). Die Bewertungen mit 2 Sternen sind mit nur `r round(bewertungen[2, "ges_anteil"]*100, 1)`% am seltensten vertreten.
 
 ## Textumfang und Bewertungen {#Textumfang}
 
@@ -99,7 +99,7 @@ plot_ly(bewertungen) %>%
     margin = list(t = 50)
   )
 ```
-Ein Vergleich zwischen den Bewertungen mit und ohne Review zeigt, dass die unzufriedene Kunden ihre Kritik eher verbalisieren als die zufriedenen Kunden ihr Lob (Abb. \@ref(fig:TextBew)). So sind bei den guten Bewertungen mit vier oder fünf Sternen die Kunden ohne Review mit einem höheren Anteil vertreten. Bei den schlechten Bewertungen verhält es sich jedoch umgekehrt. Das unterschiedliche Zufriedenheitsniveau der Kunden mit und ohne Review ist statistisch signifikant (*χ² = `r round(chi$statistic[[1]], 1)`, p = `r format(chi$p.value, scientific=TRUE, digits = 3)`*).
+Ein Vergleich zwischen den Bewertungen mit und ohne Review zeigt, dass die unzufriedenen Kunden ihre Kritik eher verbalisieren als die zufriedenen Kunden ihr Lob (Abb. \@ref(fig:TextBew)). So sind bei den guten Bewertungen mit vier oder fünf Sternen die Kunden ohne Review mit einem höheren Anteil vertreten. Bei den schlechten Bewertungen verhält es sich jedoch umgekehrt. Das unterschiedliche Zufriedenheitsniveau der Kunden mit und ohne Review ist statistisch signifikant (*χ² = `r round(chi$statistic[[1]], 1)`, p = `r format(chi$p.value, scientific=TRUE, digits = 3)`*).
 
 Ich möchte diese Überlegungen noch weiter vertiefen. Daher wird im Folgenden die Textlänge der Reviews differenziert nach dem Zufriedenheitsniveau ausgewertet.
 
@@ -143,9 +143,9 @@ subplot(rev(plots), nrows = 5, shareY = TRUE, shareX = TRUE) %>%
   )
 ```
 
-Es gibt Reviews, die lediglich ein Wort beinhalten. Maximal sind jedoch bis zu `r max(reviews$woerter)` Wörter möglich. Je negativer eine Bewertung ist, desto länger ist typischerweise der Text. Dieser Zusammenhang ist in Abb. \@ref(fig:TextlaengeBew) zu erkennen. Bei den sehr guten Bewertungen mit 5 Sternen schreiben die Kunden im Durchschnitt lediglich `r bewertungen$median_woerter[5]` Wörter. Kunden, die nur einen Stern vergeben haben, schreiben hingegen im Durchschnitt `r bewertungen$median_woerter[1]` Wörter. Unter diesen besonders schlechten Bewertungen sind auffallend viele lange Texte mit mehr mehr als 100 Wörtern zu finden. Insgesamt betrachtet zeichnet sich hier ein statistisch relevanter Zusammenhang zwischen der Textlänge und der Zufriedenheit ab (*τ = `r round(cor$estimate[[1]], 2)`, p = `r format(cor$p.value, scientific=TRUE, digits = 3)`*).
+Es gibt Reviews, die lediglich ein Wort beinhalten. Maximal sind jedoch bis zu `r max(reviews$woerter)` Wörter möglich. Je negativer eine Bewertung ist, desto länger ist typischerweise der Text. Dieser Zusammenhang ist in Abb. \@ref(fig:TextlaengeBew) zu erkennen. Bei den sehr guten Bewertungen mit 5 Sternen schreiben die Kunden im Durchschnitt lediglich `r bewertungen$median_woerter[5]` Wörter. Kunden, die nur einen Stern vergeben haben, schreiben hingegen im Durchschnitt `r bewertungen$median_woerter[1]` Wörter. Unter diesen besonders schlechten Bewertungen sind auffallend viele lange Texte mit mehr als 100 Wörtern zu finden. Insgesamt betrachtet zeichnet sich hier ein statistisch relevanter Zusammenhang zwischen der Textlänge und der Zufriedenheit ab (*τ = `r round(cor$estimate[[1]], 2)`, p = `r format(cor$p.value, scientific=TRUE, digits = 3)`*).
 
-Abschließend lässt es sich festhalten, dass die Kundenreviews keine repräsentative Stichprobe darstellen, wie wir sie aus der Marktforschung kennen. Anstelle hören wir durch eine Analyse der Kundenreviews insbesondere einer ganz spezifischen Gruppe zu: den unzufriedenen Kunden. 
+Abschließend lässt sich festhalten, dass die Kundenreviews keine repräsentative Stichprobe darstellen, wie wir sie aus der Marktforschung kennen. Stattdessen hören wir durch eine Analyse der Kundenreviews insbesondere einer ganz spezifischen Gruppe zu: den unzufriedenen Kunden. 
 
 ## Varianz und Bewertungen {#Varianz}
 
