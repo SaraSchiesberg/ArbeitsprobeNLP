@@ -1,8 +1,0 @@
-fig:Inspektion
-fig:LinieSterne
-fig:TextBew
-fig:TextlaengeBew
-fig:PCA
-fig:TopMod
-fig:KosDist
-fig:PropPosNeg
